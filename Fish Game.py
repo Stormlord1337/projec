@@ -32,7 +32,24 @@ class Player(pygame.sprite.Sprite):
     def update(self):
         self.player_input()
         self.apply_gravity()
-        
+
+class Background(pygame.sprite.Sprite):
+    def __init__(self):  
+        super().__init__()
+        self.image = pygame.image.load('assets/Background/Background0.png')
+        self.rect = self.image.get_rect(bottomleft = (0,720))
+
+    def camera_movement(self):
+        global follow_cam
+        keys = pygame.key.get_pressed()
+        if follow_cam:
+            if keys[pygame.K_a]:
+                self.rect.x += 5
+            elif keys[pygame.K_d]:
+                self.rect.x -= 5
+            else:
+                self.rect.x += 0
+
 
 # Initialising
 pygame.init()
@@ -50,11 +67,12 @@ ground = 650
 # Player assign to sprite group
 player = pygame.sprite.GroupSingle(Player())
 
-camera_x = 0
+# Background assign to sprite group
+bg = pygame.sprite.GroupSingle(Background())
 
-# Background
-bg = pygame.image.load('assets/character/BG.png')
-bg_rect = bg.get_rect(topleft = (0,0))
+# Player cam follow state
+follow_cam = False
+camera_x = 0
 
 # Gameplay loop
 while True:
@@ -62,24 +80,34 @@ while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
-            
+
+    # Update player and camera
+    player.update()        
     camera_x = max(0, player.sprite.rect.x - screen_width // 2)
     
     # Player draw and functions
     screen.fill((95,95,95))
 
    
-    # Camera follow
-    if player.sprite.rect.x >= ((screen_width/2)): 
+    #Camera follow
+    if player.sprite.rect.midbottom[0] >= screen_width // 2 and not follow_cam:
+        follow_cam = True
+    elif player.sprite.rect.midbottom[0] < screen_width// 2 and follow_cam:
+        follow_cam = False
+
+    if follow_cam: 
+        bg.sprite.camera_movement()
+        bg.draw(screen)
         for sprite in player:
             screen.blit(sprite.image,(sprite.rect.x - camera_x, sprite.rect.y))
-            bg_rect.x -= 5
     else:
-        screen.blit(bg,bg_rect)
+        bg.draw(screen)
         player.draw(screen)
-        player.sprite.update()
+
     
-    
+
+    # screen.blit(bg,bg_rect)
+    # player.draw(screen)
     
     # Display update and frame rate
     pygame.display.update()
